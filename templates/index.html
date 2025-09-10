@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Quiz</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Quiz App</h1>
+    <div id="quiz"></div>
+    <button onclick="submitAnswers()">Submit</button>
+    <h2 id="score"></h2>
+    <div id="results"></div>
+
+    <script>
+        let quizData = [];
+
+        // Get quiz from backend
+        fetch("/quiz")
+        .then(response => response.json())
+        .then(data => {
+            quizData = data;
+            showQuiz();
+        });
+
+        function showQuiz() {
+            let quizDiv = document.getElementById("quiz");
+            quizDiv.innerHTML = "";
+
+            quizData.forEach((q, index) => {
+                let html = "<p>" + q.question + "</p>";
+                q.options.forEach(option => {
+                    html += "<input type='radio' name='q"+index+"' value='"+option.charAt(0)+"'> "+option+"<br>";
+                });
+                quizDiv.innerHTML += html;
+            });
+        }
+
+        function submitAnswers() {
+            let answers = {};
+            quizData.forEach((q, index) => {
+                let selected = document.querySelector("input[name='q"+index+"']:checked");
+                if(selected) {
+                    answers["q"+index] = selected.value;
+                }
+            });
+
+            fetch("/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(answers)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("score").innerText = "Score: " + data.score + " / " + data.total;
+                let resultsDiv = document.getElementById("results");
+                resultsDiv.innerHTML = "";
+                data.results.forEach(r => {
+                    resultsDiv.innerHTML += "<p>" + r + "</p>";
+                });
+            });
+        }
+    </script>
+</body>
+</html>
